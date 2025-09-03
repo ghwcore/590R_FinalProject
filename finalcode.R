@@ -15,4 +15,5 @@ print(dat)
 #Add library
 library(gtsummary)
 
-#
+#Create descriptive table using {gtsummary}
+
