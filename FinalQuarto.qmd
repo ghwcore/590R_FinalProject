@@ -1,5 +1,5 @@
 ---
-title: "gtsummary in quarto"
+title: "Final Quarto Report"
 execute:
   warning: false
 format:
@@ -10,29 +10,41 @@ echo: false
 
 ```{r}
 #| echo: false
+
+#Add data
+here::here("pregnancy_data.csv")
+dat <- read.csv(here::here("pregnancy_data.csv"))
+print(dat)
+
+#add library
 library(tidyverse)
 library(gtsummary)
-nlsy_cols <- c("glasses", "eyesight", "sleep_wkdy", "sleep_wknd", 
-               "id", "nsibs", "samp", "race_eth", "sex", "region", 
-               "income", "res_1980", "res_2002", "age_bir")
-nlsy <- read_csv(here::here("data", "raw", "nlsy.csv"), 
-                 na = c("-1", "-2", "-3", "-4", "-5", "-998"),
-                 skip = 1, col_names = nlsy_cols) |> 
-  mutate(region_cat = factor(region, labels = c("Northeast", "North Central", "South", "West")),
-         sex_cat = factor(sex, labels = c("Male", "Female")),
-         race_eth_cat = factor(race_eth, labels = c("Hispanic", "Black", "Non-Black, Non-Hispanic")),
-         eyesight_cat = factor(eyesight, labels = c("Excellent", "Very good", "Good", "Fair", "Poor")),
-         glasses_cat = factor(glasses, labels = c("No", "Yes"))) 
+library(ggplot2)
+
+
 ```
 
-# Customization of `tbl_summary()`
+
 
 ```{r}
-tbl_summary(
-  nlsy,
-  by = sex_cat,
-  include = c(sex_cat, race_eth_cat, region_cat,
-              eyesight_cat, glasses, age_bir))
+#Create descriptive table using {gtsummary}
+tbl_summary(dat,
+						by =DystociaCase,
+						include = c(age, active_labor_duration_min, BMI_late, SES_Index, gravidity,
+  											parity, NEFA__Acetate, NEFA__Butyrate, NEFA__Iso.Valerate,
+												NEFA__Iso.Caprate, NEFA__Formate, NEFA__Propionate,
+												NEFA__Stearic, NEFA__Hexanoic, NEFA__Arachidonic),
+						#Modify to show min and max
+						statistic = list(
+												all_continuous() ~ "{mean} ({min}, {max})"
+
+						)
+						) |>
+						#add test
+						add_p(test = list(
+							all_continuous() ~ "t.test",
+							all_categorical() ~ "chisq.test"
+							))
 ```
 
 ```{r}
