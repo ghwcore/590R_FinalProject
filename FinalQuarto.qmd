@@ -7,14 +7,16 @@ format:
     theme: zephyr
 echo: false
 ---
+This dataset was used to compare non-esterified fatty acids (NEFA) in 
+pregnan twomen with dystocia. NEFA levels can be used to measure the rate of
+lipolysis which is the breakdown of adipose tissue. The levels can help 
+determine metabolic stress occurring during labor.
 
 ```{r}
 #| echo: false
-
 #Add data
-here::here("pregnancy_data.csv")
+#here::here("pregnancy_data.csv")
 dat <- read.csv(here::here("pregnancy_data.csv"))
-print(dat)
 
 #add library
 library(tidyverse)
@@ -27,6 +29,8 @@ library(ggplot2)
 
 
 ```{r}
+#| label: tbl-ds
+#| tbl-cap: "Descriptive statistics"
 #Create descriptive table using {gtsummary}
 tbl_summary(dat,
 						by =DystociaCase,
@@ -47,264 +51,128 @@ tbl_summary(dat,
 							))
 ```
 
+@tbl-ds: Descriptive Statistic Table
+
 ```{r}
-tbl_summary(
-  nlsy,
-  by = sex_cat,
-  include = c(sex_cat, race_eth_cat, region_cat,
-              eyesight_cat, glasses, age_bir),
-  label = list(
-    race_eth_cat ~ "Race/ethnicity",
-    region_cat ~ "Region",
-    eyesight_cat ~ "Eyesight",
-    glasses ~ "Wears glasses",
-    age_bir ~ "Age at first birth"
-  ),
-  missing_text = "Missing")
+logistic_model <- glm(DystociaCase ~ age + gravidity + parity,
+											data = dat, family = binomial()
+)
+
+#summary(logistic_model)
 ```
 
-Exercise 2.2 Part 2
 
-Adding code below.
 
 ```{r}
-#| eval: false 
-tbl_summary(
-  NLSY,
-  by = sex_cat,
-  include = c(sex_cat, race_eth_cat, region_cat,
-              eyesight_cat, glasses, age_bir))
+#| label: tbl-02
+#| tbl-cap: "Logistic Regression Table"
+#logistic table
+tbl_regression(
+	logistic_model,
+	exponentiate = TRUE
+
+)
+```
+@tbl-02: Logistic Regression Table
+
+
+```{r}
+#| label: tbl-03
+#| tbl-cap: "Histogram of SES Index"
+hist(dat$SES_Index)
+
+
 ```
 
-This is the corrected document.
 
 ```{r}
-#| label: tbl-1
-#| tbl-cap: "as_kable() table modified"
-tbl_summary(
-  nlsy,
-  by = sex_cat,
-  include = c(sex_cat, race_eth_cat, region_cat,
-              eyesight_cat, glasses, age_bir)) |>
-  	as_kable()
-  
-totalsamples <- nrow(nlsy)
-```
-
-@tbl-1 : this is modified by a as_kable pipe. This is actually the `r 2+2` table in the documents.
-
-This did not work. Will this work: First, `r nrow(nlsy)` and second, will this `r totalsamples` . Hope so.
-
-```{r}
-ds <- list(n = nrow(nlsy), 
-					 mean_age = mean(nlsy$age_bir, na.rm = TRUE)
+ds <- list(n = nrow(dat), 
+					 mean_age = mean(dat$age, na.rm = TRUE)
 					 )
 ```
 
-The data should give me `r ds$n` and mean age of `r ds$mean_age`.
+From the dataset, the total of participants were `r ds$n` and mean age was `r ds$mean_age`.
 
-**Next section, Inline text function**
 
 ```{r}
-#| label: tbl-descr
-#| tbl-cap: "Descriptive statistics"
-#| output-location: slide
-table1 <- tbl_summary(
-  nlsy,
-  by = sex_cat,
-  include = c(sex_cat, race_eth_cat, region_cat,
-              eyesight_cat, glasses, age_bir, sleep_wknd)) |> 
-  add_overall(last = TRUE)
-table1
+tabledat <- tbl_summary(dat,
+						by =DystociaCase,
+						include = c(age, active_labor_duration_min, BMI_late, SES_Index, gravidity,
+  											parity, NEFA__Acetate, NEFA__Butyrate, NEFA__Iso.Valerate,
+												NEFA__Iso.Caprate, NEFA__Formate, NEFA__Propionate,
+												NEFA__Stearic, NEFA__Hexanoic, NEFA__Arachidonic),
+						#Modify to show min and max
+						statistic = list(
+												all_continuous() ~ "{mean} ({min}, {max})"
+
+						)
+						) |>
+						#add test
+						add_p(test = list(
+							all_continuous() ~ "t.test",
+							all_categorical() ~ "chisq.test"
+							))
+
 ```
 
-Next is the code for the inline table.
+
 
 ```{r}
-sleepnd <- inline_text(table1, variable = "sleep_wknd", column = "stat_1")
+ses1 <- inline_text(tabledat, variable = "SES_Index", column = "stat_2")
+ses0 <- inline_text(tabledat, variable = "SES_Index", column = "stat_1")
+
+
 ```
 
-This shows the data for the inline test in the following `r sleepnd`.
+The data shows that the mean SES Index of participants with no case of dsytocia was `r ses0` and 
+the mean SES Index of participants with dsytocia was `r ses1`.
 
-ATTEMPT LINEAR REGRESSION AND INLINE TEXT
 
-```{r}
-  income_table <- tbl_uvregression(
-  	nlsy,
-  y = income,
-  include = c(
-    sex_cat, race_eth_cat,
-    eyesight_cat, income, age_bir
-  ),
-  method = lm
-)
- income_table
-```
 
-Here is the attempt: `r inline_text(income_table, variable = "age_bir")`
 
-FUNCTION
 
-Structure of a function.
 
 ```{r}
+ #Create a function
+run_lin_reg <- function(dat){
+	#linear model
+	linear_model <- lm(active_labor_duration_min ~ age,
+										 data = dat
+	)
 
-#given vector x
-y <- c(1,3,5,7,9)
+	tbl_regression(
+		linear_model,
+		# include the intercept
+		intercept = TRUE,
+	)
 
-#new mean function
-new_mean <- function(x) {
-												n <- length(x)
-												new_val <- sum(x)/n
-												
-												return(new_val)
+
 	
-}
-new_mean(y)
+} #end function
+
+#run function
+run_lin_reg(dat)
+
+linear_model <- lm(active_labor_duration_min ~ age,
+										 data = dat
+	)
+
+lintbl <-	tbl_regression(
+		linear_model,
+		# include the intercept
+		intercept = TRUE,
+	)
+
+
+age <- inline_text(lintbl, variable = "age")
 
 ```
 
-DEVELOP FUNCTION TO SQUARE A NUMBER
-
-```{r}
-
-square <- function(n){
-											new_n <- n^2
-											return(new_n)
-								
-}
-
-x <- 8
-
-square(x)
-
-
-```
-
-Attempt to concatenate.
-
-```{r}
-concat <- function(s, t){
-												u <- paste(s,t)
-												
-												return(u)
-}
-
-d <- "How"
-e <- "are you?"
-
- concat(d,e)
-```
-
-CREATE FUNCTION TO ADD TWO NUMBERS
-
-```{r}
-addit <- function(h,i){
-											j <- h + i
-											return(j)
-}
-
-m <- 6
-n <- 4
-
-addit(m,n)
-
-#Play around with input
-input1 <- readline(prompt = "Input01: ")
-input2 <- readline(prompt = "Input02: ")
-
-num1 <- as.numeric(input1)
-num2 <- as.numeric(input2)
-
-addit(num1, num2)
-```
-
-CREATE FUNCTION TO RAISE TO ANY POWER. USING DEFAULT VALUES.
-
-```{r}
-
-pwr <- function(fi, se = 1 ){
-								nw <- fi^se
-								return(nw)
-	
-}
-
-lol <- 2
-lmao <- 5
-
-pwr(lol, lmao)
-
-
-```
-
-CREATE A FUNCTION TO CALCULATE STDEV. USE IF STATEMENT.
-
-```{r}
-
-x <- c(1,2,3,4,5,6,7,8,5,10,6,12)
-na.rm <- TRUE
-
-denom <- length(x) - 1
-mean_x <- mean(x)
-diff <- x - mean_x
-square_diff <- diff^2
-numer <- sum (square_diff)
-stand_dev <- sqrt(numer/denom)
-stand_dev
-
-stdev <- function(x, na.rm = TRUE){
-					 if (na.rm){
-					 	x <- na.omit(x)
-					 }
-										
-										denom <- length(x) - 1
-										
-										
-											if (length(x) <= 0 ){
-												return (NA)
-											}
-											else{
-												
-											
-												mean_x <- mean(x)
-												diff <- x - mean_x
-												square_diff <- diff^2
-												numer <- sum (square_diff)
-												stand_dev <- sqrt(numer/denom)
-												}
-													return(stand_dev)
-											}
-							
-
-}
-
-stdev(nlsy$income, na.rm = TRUE)
+Using a linear regression model, the relationship between age and active
+labor duration was analyzed and the results are `r age`.
 
 
 
 
 
 
-
-prmt <- function(){
-								
-									
-									nstdev <- as.numeric(readline(prompt = "How many input?: "))
-									x <-length(nstdev)
-									i <- x
-									vx
-									
-									if (i < 1){}
-									else{
-										
-									vx(i) <-	as.numeric(readline(prompt = "input " + i))
-									}
-									
-									
-								
-								
-}
-
-prmt()
-
-```
